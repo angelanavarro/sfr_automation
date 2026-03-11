@@ -14,7 +14,7 @@ Every 4 hours, the system runs automatically and:
 3. Updates the master spreadsheet (SFR_Master) with new/updated rider and membership data
 4. Updates the annual spreadsheet (SFR_2026) with new/updated registrations
 5. Refreshes the **riders_view** tab so you can see who is signed up for what
-6. Updates all existing event sheets with the latest registrations and membership flags, and creates new event sheets for rides happening in the next 30 days
+6. Updates event sheets for rides within the past 7 days and the next 60 days; creates new event sheets for upcoming rides that don't have one yet
 
 You don't need to do anything. If a rider signs up or updates their info, it will appear in the sheets within 4 hours.
 
@@ -146,7 +146,7 @@ It's a quick overview of every event's registration counts. Columns are:
 
 | Column | Meaning |
 |--------|---------|
-| event_id, event_date | Which event |
+| event_id, event_date, route_id | Which event and which route |
 | total | Active (non-cancelled) registrations |
 | paid | X status riders |
 | free | Y status riders |

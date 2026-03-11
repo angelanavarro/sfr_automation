@@ -61,14 +61,19 @@ def get_client():
 
 def load_upcoming_events(annual_ss, days):
     """
-    Return list of event dicts to process:
-    - Events with an existing sheet_url are always included (update regardless of date)
-    - Events without a sheet_url are included only if within the next `days` days (creation window)
+    Return list of event dicts to process, within the active window:
+      - lookback:  7 days in the past  (catches last-minute post-event changes)
+      - lookahead: `days` days into the future (default 60)
+
+    Both existing sheets (update) and new sheets (create) are limited to this
+    window. Processing every sheet ever created caused 429 read quota errors
+    because past events never change and don't need refreshing.
     """
     ws = annual_ss.worksheet(AnnualTab.EVENTS)
     rows = ws.get_all_values()
-    today = date.today()
-    cutoff = today + timedelta(days=days)
+    today   = date.today()
+    lookback = today - timedelta(days=7)
+    cutoff  = today + timedelta(days=days)
     upcoming = []
     for i, row in enumerate(rows[1:], start=2):
         if not row[EventCol.EVENT_ID]:
@@ -77,17 +82,17 @@ def load_upcoming_events(annual_ss, days):
             event_date = date.fromisoformat(row[EventCol.EVENT_DATE])
         except ValueError:
             continue
+        if not (lookback <= event_date <= cutoff):
+            continue
         sheet_url = row[EventCol.SHEET_URL] if len(row) > EventCol.SHEET_URL else ""
-        # Always update existing sheets; only create new ones within the window
-        if sheet_url or today <= event_date <= cutoff:
-            upcoming.append({
-                "sheet_row":        i,
-                "event_id":         row[EventCol.EVENT_ID],
-                "route_id":         row[EventCol.ROUTE_ID],
-                "event_date":       row[EventCol.EVENT_DATE],
-                "worker_ride_date": row[EventCol.WORKER_RIDE_DATE] if len(row) > EventCol.WORKER_RIDE_DATE else "",
-                "sheet_url":        sheet_url,
-            })
+        upcoming.append({
+            "sheet_row":        i,
+            "event_id":         row[EventCol.EVENT_ID],
+            "route_id":         row[EventCol.ROUTE_ID],
+            "event_date":       row[EventCol.EVENT_DATE],
+            "worker_ride_date": row[EventCol.WORKER_RIDE_DATE] if len(row) > EventCol.WORKER_RIDE_DATE else "",
+            "sheet_url":        sheet_url,
+        })
     return ws, upcoming
 
 
@@ -388,8 +393,8 @@ def generate_event_sheet(event, client, ws_events, rider_info, flags, regs_by_ev
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--days", type=int, default=30,
-                        help="Generate sheets for events within this many days (default: 30)")
+    parser.add_argument("--days", type=int, default=60,
+                        help="Generate sheets for events within this many days (default: 60)")
     args = parser.parse_args()
 
     print("Connecting to spreadsheets...")

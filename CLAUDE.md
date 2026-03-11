@@ -129,7 +129,8 @@ class R1Col:           # defined in ingest_registration.py
 
 - **Service account Drive quota**: The service account cannot create new Google Sheets files (Drive storage quota = 0). Workaround: `create_event_sheets_oauth.py` uses OAuth to create files as the user. Once created, the service account can update them. New events mid-year need this OAuth script run manually.
 - **Sheets API write quota**: 60 writes/min. `generate_event_sheets.py` sleeps 15 seconds between events. Each event sheet update makes ~10 write calls.
-- **429 errors**: If you see these, increase `time.sleep()` in `generate_event_sheets.py` or reduce the `--days` window.
+- **Sheets API read quota**: 60 reads/min. `generate_event_sheets.py` only processes events within a 7-day lookback + 60-day lookahead window. Previously it updated ALL existing sheets (even months-old ones), causing 429 read errors. Do not change this back to "always update all sheets".
+- **event_summary columns**: `event_id`, `event_date`, `route_id`, then counts (total/paid/free/volunteer/workers_ride/cancelled/waiver_submitted/no_sfr_member/no_rusa_member), then `sheet_url`.
 - **R1 format**: Event cells contain full event name + price strings (e.g. `"Dillon Beach 200km $7.50"`), not status codes. Any non-empty, unrecognized cell value is normalized to `RegStatus.PAID`.
 - **Waiver field**: R1 waiver column contains `"I agree"` (not `"yes"`/`"true"`). Handled in `parse_registrations()`.
 

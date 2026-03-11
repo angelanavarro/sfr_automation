@@ -212,6 +212,7 @@ def _load_annual_data(annual_ss, master_ss):
     events = [
         {
             "event_id":   r[EventCol.EVENT_ID],
+            "route_id":   r[EventCol.ROUTE_ID],
             "event_date": r[EventCol.EVENT_DATE],
             "sheet_url":  r[EventCol.SHEET_URL] if len(r) > EventCol.SHEET_URL else "",
         }
@@ -371,7 +372,7 @@ def regenerate_summary_tab(annual_ss, master_ss, data=None):
     rusa_membership = data["rusa_membership"]
 
     header = [
-        "event_id", "event_date",
+        "event_id", "event_date", "route_id",
         "total", "paid", "free", "volunteer", "workers_ride", "cancelled",
         "waiver_submitted", "no_sfr_member", "no_rusa_member", "sheet_url",
     ]
@@ -405,6 +406,7 @@ def regenerate_summary_tab(annual_ss, master_ss, data=None):
         data_rows.append([
             eid,
             event["event_date"],
+            event["route_id"],
             total_active,
             counts[RegStatus.PAID],
             counts[RegStatus.FREE],

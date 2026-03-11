@@ -47,7 +47,7 @@ TABS = {
     AnnualTab.SUMMARY: [
         # Auto-generated — do not edit. Regenerated on every ingest run.
         # One row per event with registration counts and membership flag tallies.
-        "event_id", "event_date",
+        "event_id", "event_date", "route_id",
         "total", "paid", "free", "volunteer", "workers_ride", "cancelled",
         "waiver_submitted", "no_sfr_member", "no_rusa_member", "sheet_url",
     ],

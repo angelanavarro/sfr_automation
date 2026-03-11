@@ -205,3 +205,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# SFR credentials (service account key)
+credentials/
+
+# Claude Code local settings (personal/machine-specific)
+.claude/

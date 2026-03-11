@@ -1,0 +1,6 @@
+gspread>=6.0.0
+google-auth>=2.0.0
+
+# Required for create_event_sheets_oauth.py (one-time script, not needed for scheduled runs)
+google-auth-oauthlib>=1.0.0
+google-api-python-client>=2.0.0

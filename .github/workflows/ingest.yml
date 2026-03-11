@@ -1,0 +1,58 @@
+name: SFR Data Ingest
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"  # every 4 hours
+  workflow_dispatch:        # allow manual trigger from GitHub Actions tab
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore service account credentials
+        run: |
+          mkdir -p credentials
+          echo '${{ secrets.SERVICE_ACCOUNT_JSON }}' > credentials/service_account.json
+
+      - name: Ingest memberships
+        id: ingest_membership
+        run: python scripts/ingest_membership.py
+        continue-on-error: true  # run all three scripts even if one fails
+
+      - name: Ingest registrations
+        id: ingest_registration
+        run: python scripts/ingest_registration.py
+        continue-on-error: true
+
+      - name: Update event sheets
+        id: generate_event_sheets
+        run: python scripts/generate_event_sheets.py
+        continue-on-error: true
+
+      - name: Report failures
+        # Always runs; fails the job (triggering GitHub's normal failure email)
+        # if any of the three scripts above exited non-zero.
+        if: always()
+        run: |
+          failed=""
+          [ "${{ steps.ingest_membership.outcome }}"    = "failure" ] && failed="$failed ingest_membership"
+          [ "${{ steps.ingest_registration.outcome }}"  = "failure" ] && failed="$failed ingest_registration"
+          [ "${{ steps.generate_event_sheets.outcome }}" = "failure" ] && failed="$failed generate_event_sheets"
+          if [ -n "$failed" ]; then
+            echo "FAILED steps:$failed"
+            exit 1
+          fi
+          echo "All steps succeeded."

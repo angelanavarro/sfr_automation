@@ -1,0 +1,24 @@
+Code,Name,Description,Questions
+M1,SFR_M1_Membership_Registration_Form,"This is the first spreadsheet in the trail for SFR membership. It is a spreadsheet that jotform creates and updates. You'll see how this array of data isn't in the order I need for the membershp spreadsheet which will come later.
+
+let's call this file M1 for short",
+M2,SFR_M2_Formatting_membership_submissions_jotform,"Here is M2. It take the relevant fields from M1 and rearranges them, and also converts the year of the membership into an ""X"" for copy and paste.
+
+Also of note, on M2 here, I keep track of which rows I've processed by highlighting the RUSA number in yellow. It works imperfectly, alas but is never hard to update.",
+M3,SFR_M3_SFR_Membership,"This is M3. I copy from M2 and insert into M3. When the data in columns A-K are updates, I overwrite just those columns with a paste, and then separately paste in the years for which the member has joined.
+
+Data from this spreadsheet is used to validate data in the registration series of spreadsheets. Some of the other tabs on this spreadsheet are used for projects such as rectifying the membership list with the Announcements distribution list, or to check on membership expiration with both SFR and RUSA at the end of the year to produce reminder emails.",
+R1,SFR_R1_2026 San Francisco Randonneurs Brevet Registration,"Here is sheet R1. This is the spreadsheet created and updated by the jotform registration page. Like M1, the data isn't in the order I want so I have to do a rearrangement for R2.",
+R2,SFR_R2_Master: linked to 2026 San Francisco Randonneurs Brevet Registration,"Here is R2. This page will take the raw rows from R1 and rearrange the data, but it also will draw data from M3. Some columns on this sheet on the 'Master' tab will show alternate text (you can see the functions on the 2nd row) if the registrant is not a member. That saves me a lot of hassle looking up all the time a person's SFR membership.
+
+When a row is finished, I copy and paste that row over to R3","* There is a reference to https://docs.google.com/spreadsheets/d/11F-73Bwo7JN1_xImQlLJjlgu03VHDVWnUzrmiymAaXk/edit that I have no access to.
+
+* Why are columnx q, r, s not connected to any formula?"
+R3,SFR_R3_SFR Riders 2026,"This is R3. There are sets of downstream spreadsheets that draw data from here. I'll show those later.
+
+R2 and R3 are new every year. It is just way more manageable because the calendar changes each year and it would just get crazy if I didn't build these year by year.",
+R4a1,SFR_R4_1_100_2026_roster,"Here is R4a1
+
+This pulls data from R3 specifically for one event. This one is for 1_100_2026 which is the first populaire in January for 2026. This spreadsheet lacks any member contact info because it is used by R5.1, the volunteer spreadsheet for this same event. This is what helps the volunteer spreadsheet be up to date all the time.",
+R4b,SFR_R4b_ 1-100_2026_roster_RBA_copy,"This is R4b. This contains contact info and is a workplace for Alan as he does results and Arvi as he does waiver accounting. This is what I use to send files to the Card-o-matic app that helps us create brevet cards, waivers, and control sheets.",
+R61,SFR_R6.1_20260111_Point Reyes Populaire 118k,"This pulls data from R5a.1 (I'm going to have to double check my naming convention to make sure it is accurate) for rosters and in the case where there are two or more events on a weekend, it draws data from more than one other upstream spreadsheet.",

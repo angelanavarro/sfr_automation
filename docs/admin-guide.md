@@ -14,7 +14,7 @@ Every 4 hours, the system runs automatically and:
 3. Updates the master spreadsheet (SFR_Master) with new/updated rider and membership data
 4. Updates the annual spreadsheet (SFR_2026) with new/updated registrations
 5. Refreshes the **riders_view** tab so you can see who is signed up for what
-6. Updates event sheets for rides within the past 7 days and the next 60 days; creates new event sheets for upcoming rides that don't have one yet
+6. Updates event sheets for rides within the past 7 days and the next 14 days; creates new event sheets for upcoming rides that don't have one yet
 
 You don't need to do anything. If a rider signs up or updates their info, it will appear in the sheets within 4 hours.
 
@@ -28,6 +28,16 @@ You don't need to do anything. If a rider signs up or updates their info, it wil
 | **SFR_2026** | This year's data: events, registrations, riders_view, event_summary |
 | **Per-event sheets** | One sheet per upcoming event with roster, waivers, results |
 
+### SFR_Master tabs at a glance
+
+| Tab | What it contains |
+|-----|-----------------|
+| **riders** | One row per rider — name, email, phone, emergency contact, address |
+| **memberships** | SFR membership by year — one row per rider per year |
+| **memberships_view** | Auto-generated: full membership history at a glance, one row per rider |
+| **rusa_memberships** | Paste fresh RUSA export here to update RUSA membership status |
+| **routes** | Reusable route definitions — add new routes here |
+
 ### SFR_2026 tabs at a glance
 
 | Tab | What it contains |
@@ -37,6 +47,18 @@ You don't need to do anything. If a rider signs up or updates their info, it wil
 | **riders_view** | Pivot: one row per rider, one column per event — for checking sign-ups at a glance |
 | **event_summary** | One row per event with count breakdowns — use this for at-a-glance event stats |
 | **volunteers** | Volunteer shift assignments |
+
+### Per-event sheet tabs at a glance
+
+Each event gets its own spreadsheet with these tabs:
+
+| Tab | What it contains |
+|-----|-----------------|
+| **Roster** | RUSA#, name, status — no contact info; main section + worker's ride section |
+| **Full Roster** | Complete contact info for all registered riders |
+| **Worker's Ride** | Contact info for W-status riders only (volunteer on event day, rides separately) |
+| **Waiver Checklist** | Who has and hasn't submitted their waiver |
+| **Draft Results** | Pre-populated rider list with blank columns for finish times |
 
 ---
 
@@ -101,7 +123,7 @@ Find the rider's row in the **registrations** tab and change their `status` to `
 
 ### How do I create an event sheet manually?
 
-Each event sheet (roster, waivers, results) is normally created automatically for rides in the next 60 days. If you need one sooner, contact Angelita to run the sheet generation script manually.
+Each event sheet (roster, waivers, results) is normally created automatically for rides in the next 14 days. If you need one sooner, contact Angelita to run the sheet generation script manually.
 
 ---
 
@@ -194,7 +216,7 @@ On each event sheet (Roster, Full Roster), the **RUSA# cell** for a rider may be
 | Yellow | Rider has no SFR membership for 2026 |
 | Orange | Rider has no RUSA membership, or it has expired |
 
-These colors are refreshed automatically every time the event sheet is updated (every 4 hours for events in the next 60 days). The "Total Riders" and "Total Workers" counts shown in the sheet are live spreadsheet formulas — they will automatically adjust if you manually add or remove a rider from the sheet.
+These colors are refreshed automatically every time the event sheet is updated (every 4 hours for events in the next 14 days). The "Total Riders" and "Total Workers" counts shown in the sheet are live spreadsheet formulas — they will automatically adjust if you manually add or remove a rider from the sheet.
 
 ---
 

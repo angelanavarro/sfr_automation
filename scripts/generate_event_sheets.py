@@ -316,26 +316,20 @@ def write_full_roster_tab(ws, regs, rider_info, flags):
     apply_rusa_cell_flags(ws, regs, flags, rusa_col_index=0)
 
 
-def write_workers_ride_tab(ws, regs, rider_info):
-    """Worker's Ride tab: W-status riders only, with full contact info.
-    Total Workers is a formula so it stays accurate after manual edits.
+def write_workers_ride_tab(ws):
+    """Worker's Ride tab: FILTER formula pulling W-status riders from Full Roster.
+    Updates automatically when Full Roster changes (e.g. admin manual edits).
+    Note: per-cell membership color flags are not applied here (row positions unknown).
     """
-    workers = [(r, s, w) for r, s, w in regs if s == RegStatus.WORKERS]
     header = ["RUSA#", "First", "Last", "Address", "City", "State", "Zip",
               "Phone", "Backup", "Backup Phone", "Email", "Status", "Total Workers"]
-    rows = [header]
-    for i, (rusa_id, status, _) in enumerate(workers):
-        info = rider_info.get(rusa_id, {})
-        count = "=COUNTA(A2:A)" if i == 0 else ""
-        rows.append([
-            rusa_id, info.get("first", ""), info.get("last", ""),
-            info.get("address", ""), info.get("city", ""), info.get("state", ""),
-            info.get("zip", ""), info.get("phone", ""), info.get("backup", ""),
-            info.get("backup_phone", ""), info.get("email", ""), status, count,
-        ])
-
     ws.clear()
-    ws.update(rows, "A1", value_input_option="USER_ENTERED")
+    ws.update([header], "A1")
+    ws.update(
+        [["=FILTER('Full Roster'!A2:L,'Full Roster'!L2:L=\"W\")"]],
+        "A2",
+        value_input_option="USER_ENTERED",
+    )
     format_sheet_headers(ws, num_cols=len(header))
 
 
@@ -415,7 +409,7 @@ def generate_event_sheet(event, client, ws_events, rider_info, flags, regs_by_ev
 
     write_roster_tab(ss.worksheet("Roster"), regs, rider_info, flags)
     write_full_roster_tab(ss.worksheet("Full Roster"), regs, rider_info, flags)
-    write_workers_ride_tab(ss.worksheet("Worker's Ride"), regs, rider_info)
+    write_workers_ride_tab(ss.worksheet("Worker's Ride"))
     write_waiver_tab(ss.worksheet("Waiver Checklist"), regs, rider_info)
     write_draft_results_tab(ss.worksheet("Draft Results"), regs, rider_info)
 

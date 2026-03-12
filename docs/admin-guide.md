@@ -163,6 +163,43 @@ Riders with a blank `rusa_member` are highlighted **orange** in the RUSA# cell i
 
 ---
 
+### A rider paid their SFR membership but is still showing yellow. How do I fix it?
+
+If the rider hasn't resubmitted the Jotform membership form, their record won't update automatically. You can add it manually:
+
+1. Open **SFR_Master** and go to the **memberships** tab
+2. Add a new row at the bottom:
+
+| Column | What to enter |
+|--------|--------------|
+| rusa_id | Rider's RUSA number |
+| year | Current year (e.g. `2026`) |
+| status | `X` = paid, `Y` = free |
+
+3. The yellow highlight will clear on the next automatic run (within 4 hours)
+
+---
+
+### A rider's RUSA membership is current but they're showing orange. How do I fix it?
+
+The RUSA data only updates when you paste a fresh export into the **rusa_memberships** tab. If a rider renewed recently, their record won't reflect it until then.
+
+If you need to clear the orange flag for a specific rider right away, you can add a row for them manually:
+
+1. Open **SFR_Master** and go to the **rusa_memberships** tab
+2. Add a new row:
+
+| Column | What to enter |
+|--------|--------------|
+| rusa_id | Rider's RUSA number |
+| expiration_date | Their expiration date (YYYY-MM-DD) |
+| club | `San Francisco Randonneurs` |
+| snapshot_date | Today's date |
+
+3. The orange highlight will clear on the next automatic run (within 4 hours)
+
+---
+
 ### The data looks wrong or out of date. What do I do?
 
 The system syncs every 4 hours. If something looks wrong after that window, contact Angela — she can check the automation logs and re-run the sync manually.

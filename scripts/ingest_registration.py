@@ -378,42 +378,47 @@ def regenerate_summary_tab(annual_ss, master_ss, data=None):
     ]
 
     data_rows = []
-    for event in events:
+    for i, event in enumerate(events):
         eid  = event["event_id"]
         regs = reg_by_event.get(eid, [])
+        row_num = i + 2  # row 1 is header; first data row is row 2
 
-        counts = {s: 0 for s in (RegStatus.PAID, RegStatus.FREE,
-                                  RegStatus.VOLUNTEER, RegStatus.WORKERS,
-                                  RegStatus.CANCELLED)}
-        waiver_count = 0
+        # Membership counts still require Python (cross-spreadsheet lookup into SFR_Master)
         no_sfr = 0
         no_rusa = 0
-
         for r in regs:
-            s = r["status"]
-            counts[s] = counts.get(s, 0) + 1
-
-            if s in RegStatus.ACTIVE:
-                if r["waiver"].upper() in ("TRUE", "Y", "YES", "1"):
-                    waiver_count += 1
+            if r["status"] in RegStatus.ACTIVE:
                 if not sfr_membership.get(r["rusa_id"]):
                     no_sfr += 1
                 if not rusa_membership.get(r["rusa_id"]):
                     no_rusa += 1
 
-        total_active = sum(counts[s] for s in RegStatus.ACTIVE)
+        # Live COUNTIFS formulas — update automatically when registrations tab changes
+        total_f = (
+            f'=SUMPRODUCT((registrations!$B$2:$B$5000=$A{row_num})'
+            f'*(ISNUMBER(MATCH(registrations!$C$2:$C$5000,{{"X","Y","V","W"}},0))))'
+        )
+        paid_f      = f'=COUNTIFS(registrations!$B:$B,$A{row_num},registrations!$C:$C,"X")'
+        free_f      = f'=COUNTIFS(registrations!$B:$B,$A{row_num},registrations!$C:$C,"Y")'
+        volunteer_f = f'=COUNTIFS(registrations!$B:$B,$A{row_num},registrations!$C:$C,"V")'
+        workers_f   = f'=COUNTIFS(registrations!$B:$B,$A{row_num},registrations!$C:$C,"W")'
+        cancelled_f = f'=COUNTIFS(registrations!$B:$B,$A{row_num},registrations!$C:$C,"C")'
+        waiver_f    = (
+            f'=COUNTIFS(registrations!$B:$B,$A{row_num},registrations!$C:$C,"<>C",'
+            f'registrations!$D:$D,"TRUE")'
+        )
 
         data_rows.append([
             eid,
             event["event_date"],
             event["route_id"],
-            total_active,
-            counts[RegStatus.PAID],
-            counts[RegStatus.FREE],
-            counts[RegStatus.VOLUNTEER],
-            counts[RegStatus.WORKERS],
-            counts[RegStatus.CANCELLED],
-            waiver_count,
+            total_f,
+            paid_f,
+            free_f,
+            volunteer_f,
+            workers_f,
+            cancelled_f,
+            waiver_f,
             no_sfr,
             no_rusa,
             event["sheet_url"],
@@ -425,7 +430,7 @@ def regenerate_summary_tab(annual_ss, master_ss, data=None):
         ws = annual_ss.add_worksheet(title=AnnualTab.SUMMARY, rows=200, cols=len(header) + 2)
 
     ws.clear()
-    ws.update([header] + data_rows, "A1")
+    ws.update([header] + data_rows, "A1", value_input_option="USER_ENTERED")
     format_sheet_headers(ws, num_cols=len(header))
 
     annual_ss.batch_update({"requests": [{

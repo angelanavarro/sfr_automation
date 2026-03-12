@@ -98,6 +98,8 @@ EVENTS_2026 = [
 
 EVENTS_BY_YEAR = {
     2026: EVENTS_2026,
+    # TODO: fill in EVENTS_2027 before running create_annual.py for 2027
+    2027: [],
 }
 
 
@@ -174,7 +176,7 @@ def main():
     print(f"SFR_{year} set up successfully.")
     print(f"URL: {ss.url}")
     print(f"ID:  {ss.id}")
-    print(f"\nNext: copy the ID into config.py → ANNUAL_SPREADSHEET_ID")
+    print(f"\nNext: copy the ID into config.py → ANNUAL_SPREADSHEET_IDS[{year}]")
     print(f"Then: run scripts/ingest_membership.py and scripts/ingest_registration.py")
     print("=" * 60)
 

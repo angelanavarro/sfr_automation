@@ -291,3 +291,32 @@ The system will pick it up on the next automatic run and update the `rusa_member
 ### What happens at the start of a new year?
 
 Angela runs a setup script that creates the new annual spreadsheet (e.g. SFR_2027), seeds it with the event calendar, and updates the configuration. SFR_Master carries over automatically — no data is lost.
+
+---
+
+## Year-end transition (December–January)
+
+Around December 16, the 14-day lookahead window starts reaching into January of the following year. The system handles this automatically — both the current year (SFR_2026) and next year (SFR_2027) can be active at the same time during this window.
+
+### What Angela does (by December 1)
+
+1. Fill in the 2027 event calendar in `create_annual.py` (`EVENTS_2027 = [...]`)
+2. Create a blank Google Sheet named `SFR_2027` in Google Drive
+3. Share it (Editor) with the service account email (from `credentials/service_account.json` → `client_email`)
+4. Run: `python scripts/create_annual.py <new_sheet_id> 2027`
+5. Verify the 5 tabs exist in the new sheet (events, registrations, riders_view, event_summary, volunteers)
+6. Copy the sheet ID into `config.py` → `ANNUAL_SPREADSHEET_IDS[2027]`
+7. Commit and push — automation picks up both sheets on the next run (within 4 hours)
+8. Confirm riders_view and event_summary populate in SFR_2027 after the next run
+9. **In January:** Update `CURRENT_YEAR = 2027` in `config.py` — this controls which year's SFR membership is shown in riders_view and event sheets
+10. **In February:** Set `ANNUAL_SPREADSHEET_IDS[2026]` back to `""` once all December 2026 events are more than 7 days in the past
+
+### What Rob does
+
+Nothing — January 2027 event sheets appear automatically once registrations exist for those events.
+
+### Notes
+
+- **SFR membership flags in December:** If a rider has a 2027 SFR membership but not 2026, they will show yellow on January 2027 event sheets until `CURRENT_YEAR` is updated to 2027 in January. This is expected and resolves automatically.
+- **API quota:** Having two active sheets roughly doubles the number of API calls per run, but this is still well within the 60 reads/min limit.
+- **Removing SFR_2026 from config:** Wait until February 2027, once all December 2026 events are past the 7-day lookback window. Set `ANNUAL_SPREADSHEET_IDS[2026] = ""` to stop processing it.

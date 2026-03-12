@@ -37,7 +37,7 @@ from google.oauth2.service_account import Credentials
 
 from utils import format_sheet_headers, apply_membership_flags
 from config import (
-    CREDENTIALS_FILE, MASTER_SPREADSHEET_ID, ANNUAL_SPREADSHEET_ID,
+    CREDENTIALS_FILE, MASTER_SPREADSHEET_ID, get_active_annual_ids,
     R1_SPREADSHEET_ID, R1_SHEET_NAME,
     AnnualTab, MasterTab, RegStatus, EventCol, CURRENT_YEAR,
 )
@@ -72,26 +72,37 @@ def fetch_sheet_rows(client, spreadsheet_id, sheet_name):
     return rows[0], rows[1:]
 
 
-def build_column_map(annual_ss):
+def build_column_map(annual_sheets):
     """
-    Read the events tab and build a mapping of:
+    Read the events tab from all active annual sheets and build a combined mapping of:
         r1_header_text → event_id
     for all jotform events. Warns about events with no jotform_column_name.
+
+    annual_sheets: list of (year, Spreadsheet) tuples
     """
-    ws = annual_ss.worksheet(AnnualTab.EVENTS)
-    rows = ws.get_all_values()
     col_map = {}
-    for row in rows[1:]:
-        if len(row) <= EventCol.JOTFORM_COLUMN_NAME:
-            continue
-        event_id = row[EventCol.EVENT_ID].strip()
-        jotform_col_name = row[EventCol.JOTFORM_COLUMN_NAME].strip()
-        source = row[EventCol.REGISTRATION_SOURCE].strip()
-        if source == "jotform" and jotform_col_name:
-            col_map[jotform_col_name] = event_id
-        elif source == "jotform" and not jotform_col_name:
-            print(f"  Warning: event {event_id} has registration_source=jotform but no jotform_column_name")
+    for _year, annual_ss in annual_sheets:
+        ws = annual_ss.worksheet(AnnualTab.EVENTS)
+        rows = ws.get_all_values()
+        for row in rows[1:]:
+            if len(row) <= EventCol.JOTFORM_COLUMN_NAME:
+                continue
+            event_id = row[EventCol.EVENT_ID].strip()
+            jotform_col_name = row[EventCol.JOTFORM_COLUMN_NAME].strip()
+            source = row[EventCol.REGISTRATION_SOURCE].strip()
+            if source == "jotform" and jotform_col_name:
+                col_map[jotform_col_name] = event_id
+            elif source == "jotform" and not jotform_col_name:
+                print(f"  Warning: event {event_id} has registration_source=jotform but no jotform_column_name")
     return col_map
+
+
+def _year_from_event_id(event_id):
+    """Extract year from event_id prefix (e.g. '2027_01_200_1' → 2027)."""
+    try:
+        return int(event_id.split("_")[0])
+    except (ValueError, IndexError):
+        return None
 
 
 # R1 columns that are not events and should be silently ignored
@@ -450,11 +461,13 @@ def main():
     print("Connecting to spreadsheets...")
     try:
         client = get_client()
-        annual_ss = client.open_by_key(ANNUAL_SPREADSHEET_ID)
         master_ss = client.open_by_key(MASTER_SPREADSHEET_ID)
+        annual_sheets = [(year, client.open_by_key(sid)) for year, sid in get_active_annual_ids()]
     except Exception as e:
         print(f"ERROR: Could not connect to Google Sheets — {e}")
         sys.exit(1)
+
+    annual_ss_by_year = {year: ss for year, ss in annual_sheets}
 
     print("Fetching registration form data...")
     try:
@@ -464,25 +477,38 @@ def main():
         sys.exit(1)
     print(f"  {len(r1_rows)} submission rows found")
 
-    print("Building event→column map from events tab...")
-    col_map = build_column_map(annual_ss)
+    print("Building event→column map from events tabs...")
+    col_map = build_column_map(annual_sheets)
     print(f"  {len(col_map)} jotform events mapped")
 
     print("Parsing registrations...")
     registrations = parse_registrations(r1_headers, r1_rows, col_map)
     print(f"  {len(registrations)} (rider, event) records parsed")
 
-    ws_reg = annual_ss.worksheet(AnnualTab.REGISTRATIONS)
-    existing = load_existing_registrations(ws_reg)
+    # Group registrations by year and upsert into the correct annual sheet
+    regs_by_year = {}
+    for reg in registrations:
+        y = _year_from_event_id(reg["event_id"])
+        if y:
+            regs_by_year.setdefault(y, []).append(reg)
 
     print("Upserting registrations...")
-    n_ins, n_upd = upsert_registrations(ws_reg, existing, registrations)
-    print(f"  {n_ins} inserted, {n_upd} updated")
+    for year, year_regs in sorted(regs_by_year.items()):
+        annual_ss = annual_ss_by_year.get(year)
+        if not annual_ss:
+            print(f"  Warning: no active sheet for year {year}, skipping {len(year_regs)} registrations")
+            continue
+        ws_reg = annual_ss.worksheet(AnnualTab.REGISTRATIONS)
+        existing = load_existing_registrations(ws_reg)
+        n_ins, n_upd = upsert_registrations(ws_reg, existing, year_regs)
+        print(f"  SFR_{year}: {n_ins} inserted, {n_upd} updated")
 
-    # Load shared data once for both regeneration passes (avoids duplicate API calls)
-    data = _load_annual_data(annual_ss, master_ss)
-    regenerate_riders_view(annual_ss, master_ss, data=data)
-    regenerate_summary_tab(annual_ss, master_ss, data=data)
+    # Regenerate views for all active annual sheets
+    for year, annual_ss in annual_sheets:
+        print(f"Regenerating views for SFR_{year}...")
+        data = _load_annual_data(annual_ss, master_ss)
+        regenerate_riders_view(annual_ss, master_ss, data=data)
+        regenerate_summary_tab(annual_ss, master_ss, data=data)
     print("Done.")
 
 

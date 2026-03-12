@@ -39,7 +39,7 @@ from google.oauth2.service_account import Credentials
 
 from utils import format_sheet_headers
 from config import (
-    CREDENTIALS_FILE, MASTER_SPREADSHEET_ID, ANNUAL_SPREADSHEET_ID,
+    CREDENTIALS_FILE, MASTER_SPREADSHEET_ID, get_active_annual_ids,
     M1_SPREADSHEET_ID, M1_SHEET_NAME,
     MasterTab, M1Col, CURRENT_YEAR,
 )
@@ -313,10 +313,10 @@ def main():
     print("Regenerating memberships_view...")
     regenerate_memberships_view(master_ss)
 
-    # Regenerate riders_view in the annual spreadsheet so updated rider info is reflected
-    if ANNUAL_SPREADSHEET_ID:
-        annual_ss = client.open_by_key(ANNUAL_SPREADSHEET_ID)
-        regenerate_riders_view(annual_ss, master_ss)
+    # Regenerate riders_view in all active annual spreadsheets so updated rider info is reflected
+    for year, sid in get_active_annual_ids():
+        print(f"Regenerating riders_view for SFR_{year}...")
+        regenerate_riders_view(client.open_by_key(sid), master_ss)
 
     print("Done.")
 

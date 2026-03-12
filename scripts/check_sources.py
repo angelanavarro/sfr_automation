@@ -7,7 +7,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import gspread
 from google.oauth2.service_account import Credentials
-from config import CREDENTIALS_FILE, M1_SPREADSHEET_ID, M1_SHEET_NAME, R1_SPREADSHEET_ID, R1_SHEET_NAME, M1Col, R1Col
+from config import CREDENTIALS_FILE, M1_SPREADSHEET_ID, M1_SHEET_NAME, R1_SPREADSHEET_ID, R1_SHEET_NAME, M1Col
+from scripts.ingest_registration import R1Col
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 

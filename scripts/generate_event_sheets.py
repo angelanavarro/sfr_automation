@@ -36,11 +36,12 @@ import time
 
 import gspread
 from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build as build_service
 
 from datetime import date, timedelta
 
 from config import (
-    CREDENTIALS_FILE, MASTER_SPREADSHEET_ID, ANNUAL_SPREADSHEET_ID,
+    CREDENTIALS_FILE, MASTER_SPREADSHEET_ID, ANNUAL_SPREADSHEET_IDS, get_active_annual_ids,
     EVENTS_FOLDER_ID, MasterTab, AnnualTab, EventCol, RegStatus, CURRENT_YEAR,
 )
 from utils import format_sheet_headers, FLAG_YELLOW
@@ -56,7 +57,7 @@ EVENT_TABS = ["Roster", "Full Roster", "Worker's Ride", "Waiver Checklist", "Dra
 
 def get_client():
     creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
-    return gspread.authorize(creds)
+    return gspread.authorize(creds), build_service("drive", "v3", credentials=creds)
 
 
 def load_upcoming_events(annual_ss, days):
@@ -231,15 +232,29 @@ def open_sheet(client, url_or_id):
     return client.open_by_key(sheet_id)
 
 
-def create_event_spreadsheet(client, title):
-    """Create a new spreadsheet in EVENTS_FOLDER_ID and return it."""
+def create_event_spreadsheet(client, drive_service, title):
+    """
+    Create a new spreadsheet in EVENTS_FOLDER_ID and return it.
+    Uses the Drive API directly with supportsAllDrives=True so that
+    Shared Drives work (service accounts have no personal Drive quota).
+    """
     if not EVENTS_FOLDER_ID:
         raise ValueError(
             "EVENTS_FOLDER_ID is not set in config.py.\n"
-            "Create a folder in Google Drive, share it (Editor) with the service account, "
-            "and paste the folder ID into config.py."
+            "Create a Shared Drive in Google Drive, add the service account as a member, "
+            "and paste the Shared Drive ID into config.py."
         )
-    return client.create(title, folder_id=EVENTS_FOLDER_ID)
+    metadata = {
+        "name": title,
+        "mimeType": "application/vnd.google-apps.spreadsheet",
+        "parents": [EVENTS_FOLDER_ID],
+    }
+    file = drive_service.files().create(
+        body=metadata,
+        supportsAllDrives=True,
+        fields="id",
+    ).execute()
+    return client.open_by_key(file["id"])
 
 
 def setup_event_spreadsheet(ss):
@@ -367,7 +382,7 @@ def write_draft_results_tab(ws, regs, rider_info):
     format_sheet_headers(ws, num_cols=len(header))
 
 
-def generate_event_sheet(event, client, ws_events, rider_info, flags, regs_by_event):
+def generate_event_sheet(event, client, drive_service, rider_info, flags, regs_by_event):
     """
     Create or update the spreadsheet for a single event.
 
@@ -395,16 +410,16 @@ def generate_event_sheet(event, client, ws_events, rider_info, flags, regs_by_ev
     else:
         print(f"  Creating new sheet...")
         try:
-            ss = create_event_spreadsheet(client, event["event_id"])
-        except gspread.exceptions.APIError as e:
-            if getattr(e.response, "status_code", None) == 403:
-                print(f"  WARNING: Cannot create sheet — service account Drive storage quota exceeded.")
-                print(f"  Create a blank Google Sheet, share it (Editor) with the service account,")
-                print(f"  and paste the URL into the sheet_url column of the events tab.")
-                return False  # skip gracefully; do not count as an error
+            ss = create_event_spreadsheet(client, drive_service, event["event_id"])
+        except Exception as e:
+            status = getattr(getattr(e, "resp", None), "status", None)
+            if status == "403" or (hasattr(e, "status_code") and e.status_code == 403):
+                print(f"  WARNING: Cannot create sheet — Drive quota or permission error.")
+                print(f"  Ensure EVENTS_FOLDER_ID is a Shared Drive and the service account is a member.")
+                return False
             raise
         setup_event_spreadsheet(ss)
-        ws_events.update([[ss.url]], f"H{event['sheet_row']}")
+        event["ws_events"].update([[ss.url]], f"H{event['sheet_row']}")
         print(f"    Created: {ss.url}")
 
     write_roster_tab(ss.worksheet("Roster"), regs, rider_info, flags)
@@ -425,22 +440,29 @@ def main():
 
     print("Connecting to spreadsheets...")
     try:
-        client = get_client()
-        annual_ss = client.open_by_key(ANNUAL_SPREADSHEET_ID)
+        client, drive_service = get_client()
         master_ss = client.open_by_key(MASTER_SPREADSHEET_ID)
+        annual_sheets = [(year, client.open_by_key(sid)) for year, sid in get_active_annual_ids()]
     except Exception as e:
         print(f"ERROR: Could not connect to Google Sheets — {e}")
         sys.exit(1)
 
     print(f"Loading events in the next {args.days} days...")
     try:
-        ws_events, upcoming = load_upcoming_events(annual_ss, args.days)
+        all_upcoming = []
+        for year, annual_ss in annual_sheets:
+            ws_events, upcoming = load_upcoming_events(annual_ss, args.days)
+            for event in upcoming:
+                event["annual_ss"] = annual_ss
+                event["ws_events"] = ws_events
+            all_upcoming.extend(upcoming)
+        all_upcoming.sort(key=lambda e: e["event_date"])
     except Exception as e:
         print(f"ERROR: Could not load events tab — {e}")
         sys.exit(1)
-    print(f"  {len(upcoming)} upcoming events found")
+    print(f"  {len(all_upcoming)} upcoming events found")
 
-    if not upcoming:
+    if not all_upcoming:
         print("Nothing to do.")
         return
 
@@ -449,24 +471,26 @@ def main():
     try:
         rider_info    = load_riders(master_ss)
         flags         = load_memberships(master_ss)
-        regs_by_event = load_all_registrations(annual_ss)
+        regs_by_event = {}
+        for _year, annual_ss in annual_sheets:
+            regs_by_event.update(load_all_registrations(annual_ss))
     except Exception as e:
         print(f"ERROR: Could not load shared data — {e}")
         sys.exit(1)
     print(f"  {len(rider_info)} riders, {len(regs_by_event)} events with registrations")
 
     errors = []
-    for i, event in enumerate(upcoming):
+    for i, event in enumerate(all_upcoming):
         print(f"\n{event['event_id']} ({event['event_date']})")
         try:
-            with_quota_retry(generate_event_sheet, event, client, ws_events, rider_info, flags, regs_by_event)
+            with_quota_retry(generate_event_sheet, event, client, drive_service, rider_info, flags, regs_by_event)
         except Exception as e:
             print(f"  ERROR: {e}")
             errors.append((event["event_id"], str(e)))
         # Throttle between events to stay well under the Sheets API write quota.
         # Each event sheet update makes ~10 write calls; 15s keeps us under the
         # 60-writes-per-minute limit even for back-to-back large events.
-        if i < len(upcoming) - 1:
+        if i < len(all_upcoming) - 1:
             time.sleep(15)
 
     print("\nDone.")

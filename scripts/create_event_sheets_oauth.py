@@ -33,7 +33,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 from config import (
-    CREDENTIALS_FILE, MASTER_SPREADSHEET_ID, ANNUAL_SPREADSHEET_ID,
+    CREDENTIALS_FILE, MASTER_SPREADSHEET_ID, get_active_annual_ids,
     EVENTS_FOLDER_ID, AnnualTab, EventCol,
 )
 from scripts.generate_event_sheets import (
@@ -129,19 +129,26 @@ def main():
     print("Connecting to SFR spreadsheets (service account)...")
     sa_client  = get_service_account_client()
     sa_email   = get_service_account_email()
-    annual_ss  = sa_client.open_by_key(ANNUAL_SPREADSHEET_ID)
     master_ss  = sa_client.open_by_key(MASTER_SPREADSHEET_ID)
+    annual_sheets = [(year, sa_client.open_by_key(sid)) for year, sid in get_active_annual_ids()]
 
-    print(f"Loading events in the next {args.days} days...")
-    ws_events, upcoming = load_upcoming_events(annual_ss, args.days)
-    print(f"  {len(upcoming)} upcoming events found")
+    print("Loading riders and memberships...")
+    rider_info = load_riders(master_ss)
+    flags      = load_memberships(master_ss)
 
-    print("Loading riders, memberships, and registrations...")
-    rider_info    = load_riders(master_ss)
-    flags         = load_memberships(master_ss)
-    regs_by_event = load_all_registrations(annual_ss)
+    all_upcoming = []
+    regs_by_event = {}
+    for year, annual_ss in annual_sheets:
+        print(f"Loading events in the next {args.days} days (SFR_{year})...")
+        ws_events, upcoming = load_upcoming_events(annual_ss, args.days)
+        for event in upcoming:
+            event["ws_events"] = ws_events
+        all_upcoming.extend(upcoming)
+        regs_by_event.update(load_all_registrations(annual_ss))
+    all_upcoming.sort(key=lambda e: e["event_date"])
+    print(f"  {len(all_upcoming)} upcoming events found")
 
-    for event in upcoming:
+    for event in all_upcoming:
         print(f"\n{event['event_id']} ({event['event_date']})")
 
         regs = regs_by_event.get(event["event_id"], [])
@@ -163,7 +170,7 @@ def main():
 
         write_roster_tab(ss.worksheet("Roster"), regs, rider_info, flags)
         write_full_roster_tab(ss.worksheet("Full Roster"), regs, rider_info, flags)
-        write_workers_ride_tab(ss.worksheet("Worker's Ride"), regs, rider_info)
+        write_workers_ride_tab(ss.worksheet("Worker's Ride"))
         write_waiver_tab(ss.worksheet("Waiver Checklist"), regs, rider_info)
         write_draft_results_tab(ss.worksheet("Draft Results"), regs, rider_info)
 
@@ -171,7 +178,7 @@ def main():
         print(f"  Shared with service account ({sa_email})")
 
         # Store sheet URL back in events tab (using service account which has Editor access)
-        ws_events.update([[ss.url]], f"H{event['sheet_row']}")
+        event["ws_events"].update([[ss.url]], f"H{event['sheet_row']}")
         print(f"  Saved sheet_url → events tab row {event['sheet_row']}")
         print(f"  URL: {ss.url}")
 

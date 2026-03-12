@@ -19,13 +19,24 @@ R1_SHEET_NAME     = "Form responses"
 # Master spreadsheet ID (permanent, cross-year) — set after create_master.py is run
 MASTER_SPREADSHEET_ID = "1j7lJrE6JqKyVdZ1HxZeE-HKQsnlibeneyqQvJEoDfQQ"
 
-# Annual spreadsheet ID (one per year) — set after create_annual.py is run
-ANNUAL_SPREADSHEET_ID = "1Aq5JWZfNgOiKlX-Yn_Aflw85H6IMhuDstYaYkdlkS_4"
+# Annual spreadsheet IDs (one per year) — keyed by year.
+# During the December transition window, both the current and next year can be active simultaneously.
+# Set to "" for years that don't have a sheet yet; get_active_annual_ids() skips empty entries.
+ANNUAL_SPREADSHEET_IDS = {
+    2026: "1Aq5JWZfNgOiKlX-Yn_Aflw85H6IMhuDstYaYkdlkS_4",  # SFR_2026
+    2027: "",  # populate after running create_annual.py in November
+}
 CURRENT_YEAR = 2026
+
+
+def get_active_annual_ids():
+    """Return [(year, sheet_id)] for all non-empty annual IDs, sorted by year."""
+    return [(year, sid) for year, sid in sorted(ANNUAL_SPREADSHEET_IDS.items()) if sid]
+
 
 # Google Drive folder ID where per-event sheets are created.
 # Create a folder in your Drive, share it (Editor) with the service account, paste the ID here.
-EVENTS_FOLDER_ID = "1fLP5ALJ3vbkG11CTj11in_OIMiNkYrlM"
+EVENTS_FOLDER_ID = "10lQaSIVukVqCuPGNhd4-GUioigJQeovv"
 
 # Master spreadsheet tab names (permanent data)
 class MasterTab:

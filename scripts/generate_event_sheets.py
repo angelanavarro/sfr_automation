@@ -393,6 +393,11 @@ def generate_event_sheet(event, client, ws_events, rider_info, flags, regs_by_ev
     if event["sheet_url"]:
         print(f"  Updating existing sheet...")
         ss = open_sheet(client, event["sheet_url"])
+        # If the admin manually created a blank sheet and linked it, set up the tabs now.
+        existing_tabs = {ws.title for ws in ss.worksheets()}
+        if not existing_tabs.issuperset(set(EVENT_TABS)):
+            print(f"  Sheet is missing tabs — setting up now...")
+            setup_event_spreadsheet(ss)
     else:
         print(f"  Creating new sheet...")
         try:
@@ -400,7 +405,8 @@ def generate_event_sheet(event, client, ws_events, rider_info, flags, regs_by_ev
         except gspread.exceptions.APIError as e:
             if getattr(e.response, "status_code", None) == 403:
                 print(f"  WARNING: Cannot create sheet — service account Drive storage quota exceeded.")
-                print(f"  Run manually: python scripts/create_event_sheets_oauth.py --days 60")
+                print(f"  Create a blank Google Sheet, share it (Editor) with the service account,")
+                print(f"  and paste the URL into the sheet_url column of the events tab.")
                 return False  # skip gracefully; do not count as an error
             raise
         setup_event_spreadsheet(ss)

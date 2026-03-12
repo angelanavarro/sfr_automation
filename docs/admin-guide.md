@@ -123,7 +123,14 @@ Find the rider's row in the **registrations** tab and change their `status` to `
 
 ### How do I create an event sheet manually?
 
-Each event sheet (roster, waivers, results) is normally created automatically for rides in the next 14 days. If you need one sooner, contact Angelita to run the sheet generation script manually.
+Event sheets are created automatically for rides in the next 14 days. If you need one sooner:
+
+1. Create a blank Google Sheet in your Drive and name it after the event (e.g. `2026_05_300_1`)
+2. Share it (Editor) with the service account email — ask Angela for that address
+3. Copy the sheet URL and paste it into the **sheet_url** column for that event in the **events** tab of SFR_2026
+4. The next automatic run (within 4 hours) will populate all tabs with the current roster
+
+If you need it right away, ask Angela to trigger a manual run.
 
 ---
 
@@ -158,7 +165,7 @@ Riders with a blank `rusa_member` are highlighted **orange** in the RUSA# cell i
 
 ### The data looks wrong or out of date. What do I do?
 
-The system syncs every 4 hours. If something looks wrong after that window, contact Angelita — she can check the automation logs and re-run the sync manually.
+The system syncs every 4 hours. If something looks wrong after that window, contact Angela — she can check the automation logs and re-run the sync manually.
 
 ---
 
@@ -246,4 +253,4 @@ The system will pick it up on the next automatic run and update the `rusa_member
 
 ### What happens at the start of a new year?
 
-Angelita runs a setup script that creates the new annual spreadsheet (e.g. SFR_2027), seeds it with the event calendar, and updates the configuration. SFR_Master carries over automatically — no data is lost.
+Angela runs a setup script that creates the new annual spreadsheet (e.g. SFR_2027), seeds it with the event calendar, and updates the configuration. SFR_Master carries over automatically — no data is lost.

@@ -25,7 +25,7 @@ scripts/
   create_annual.py               # One-time: initialise SFR_YYYY annual spreadsheet
   check_sources.py               # Diagnostic: verify M1/R1 access
 
-docs/rob-guide.md                # Non-technical guide for Rob
+docs/admin-guide.md              # Non-technical guide for the events admin
 data_model.md                    # Full schema reference
 .github/workflows/ingest.yml     # GitHub Actions cron (every 4 hours)
 ```
@@ -152,4 +152,4 @@ All three steps run independently with `continue-on-error: true`; a final `Repor
 - [ ] Verify M1/R1 are shared with the service account: run `python scripts/check_sources.py`
 - [ ] Investigate/fix service account Drive quota so `generate_event_sheets.py` can create new sheets without the OAuth workaround
 - [ ] Determine source for `email_lists` tab in SFR_Master
-- [ ] Share `docs/rob-guide.md` with Rob
+- [ ] Share `docs/admin-guide.md` with the events admin

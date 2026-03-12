@@ -75,7 +75,7 @@ scripts/
   check_sources.py               # Diagnostic: verify M1/R1 are accessible
 
 docs/
-  rob-guide.md                   # Non-technical guide for the events admin (Rob)
+  admin-guide.md                 # Non-technical guide for the events admin
 
 data_model.md                    # Full schema reference
 .github/workflows/ingest.yml     # GitHub Actions cron (every 4 hours)
@@ -143,8 +143,8 @@ source venv/bin/activate
 
 python scripts/ingest_membership.py      # sync membership data
 python scripts/ingest_registration.py    # sync registrations + refresh pivot views
-python scripts/generate_event_sheets.py  # update event roster sheets
-python scripts/generate_event_sheets.py --days 60  # wider creation window
+python scripts/generate_event_sheets.py  # update event roster sheets (default: 14-day window)
+python scripts/generate_event_sheets.py --days 60  # wider window, e.g. for new-season setup
 ```
 
 ---

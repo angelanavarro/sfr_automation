@@ -283,21 +283,15 @@ Manual entry points:
 
 ---
 
-## Open Questions (pending Rob's response)
-
-- [ ] **Fleche, DART, DARTP, NOVDARTPOP registration flow** — how are registrations
-      collected for these events? Separate Jotform? Email? Manual list?
-- [ ] **Mid-week events** (R1 cols AE, AF, AG, AH, AJ) — are these the same route ridden
-      on a weekday? Should they share a route record with the weekend version, or be
-      separate routes? Deferred for now.
-
----
-
 ## Deferred
 
 - **R5 (volunteer sheet per event)** — not yet provided; will be a view derived from
-  `volunteers` + `riders` for a given event
-- **Mid-week event handling** — defer until Rob clarifies
-- **Jotform form generation from calendar** — long-term: Rob adds to `events` tab,
+  `volunteers` + `riders` for a given event; defer until admin clarifies format
+- **Fleche, DART, DARTP, NOVDARTPOP registration flow** — how registrations are collected
+  for `separate_flow` events is TBD; defer until admin clarifies
+- **Mid-week event handling** — defer until admin clarifies whether mid-week rides share
+  a route record with the weekend version or get their own
+- **email_lists source** — currently tabs in M3; source sheet ID TBD
+- **Jotform form generation from calendar** — long-term: admin adds to `events` tab,
   script syncs to Jotform. Phase 2 after core system is working.
 - **Card-o-matic export** — keep identical to current R4b `Roster` column format

@@ -1,5 +1,5 @@
 """
-Generates per-event spreadsheets for events happening within the next 30 days.
+Generates per-event spreadsheets for events happening within the next 14 days.
 
 For each qualifying event, creates (or updates) a spreadsheet with 5 tabs:
   Roster          — rusa, name, status only (no contact info); includes worker's ride section
@@ -205,6 +205,25 @@ def load_all_registrations(annual_ss):
     return regs_by_event
 
 
+def with_quota_retry(fn, *args, max_retries=3, **kwargs):
+    """
+    Call fn(*args, **kwargs), retrying up to max_retries times on 429 quota errors.
+    Waits 60 seconds before each retry (enough for the per-minute quota to reset).
+    All other errors are re-raised immediately.
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            return fn(*args, **kwargs)
+        except gspread.exceptions.APIError as e:
+            status = getattr(e.response, "status_code", None)
+            if status == 429 and attempt < max_retries:
+                wait = 60
+                print(f"  Quota exceeded (429), waiting {wait}s before retry {attempt + 1}/{max_retries}...")
+                time.sleep(wait)
+            else:
+                raise
+
+
 def open_sheet(client, url_or_id):
     """Open a spreadsheet by URL or bare spreadsheet ID."""
     match = re.search(r"/spreadsheets/d/([a-zA-Z0-9_-]+)", url_or_id)
@@ -376,7 +395,14 @@ def generate_event_sheet(event, client, ws_events, rider_info, flags, regs_by_ev
         ss = open_sheet(client, event["sheet_url"])
     else:
         print(f"  Creating new sheet...")
-        ss = create_event_spreadsheet(client, event["event_id"])
+        try:
+            ss = create_event_spreadsheet(client, event["event_id"])
+        except gspread.exceptions.APIError as e:
+            if getattr(e.response, "status_code", None) == 403:
+                print(f"  WARNING: Cannot create sheet — service account Drive storage quota exceeded.")
+                print(f"  Run manually: python scripts/create_event_sheets_oauth.py --days 60")
+                return False  # skip gracefully; do not count as an error
+            raise
         setup_event_spreadsheet(ss)
         ws_events.update([[ss.url]], f"H{event['sheet_row']}")
         print(f"    Created: {ss.url}")
@@ -393,8 +419,8 @@ def generate_event_sheet(event, client, ws_events, rider_info, flags, regs_by_ev
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--days", type=int, default=60,
-                        help="Generate sheets for events within this many days (default: 60)")
+    parser.add_argument("--days", type=int, default=14,
+                        help="Generate sheets for events within this many days (default: 14)")
     args = parser.parse_args()
 
     print("Connecting to spreadsheets...")
@@ -433,7 +459,7 @@ def main():
     for i, event in enumerate(upcoming):
         print(f"\n{event['event_id']} ({event['event_date']})")
         try:
-            generate_event_sheet(event, client, ws_events, rider_info, flags, regs_by_event)
+            with_quota_retry(generate_event_sheet, event, client, ws_events, rider_info, flags, regs_by_event)
         except Exception as e:
             print(f"  ERROR: {e}")
             errors.append((event["event_id"], str(e)))

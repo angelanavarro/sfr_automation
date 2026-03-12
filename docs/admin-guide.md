@@ -1,7 +1,7 @@
-# SFR Automation — Guide for Rob
+# SFR Automation — Admin Guide
 
 This document explains how the new system works and answers common questions.
-The goal is simple: **you do less copy/paste, and the data stays up to date automatically.**
+The goal is simple: **less copy/paste, and the data stays up to date automatically.**
 
 ---
 
@@ -101,7 +101,7 @@ Find the rider's row in the **registrations** tab and change their `status` to `
 
 ### How do I create an event sheet manually?
 
-Each event sheet (roster, waivers, results) is normally created automatically for rides in the next 30 days. If you need one sooner, contact Angelita to run the sheet generation script manually.
+Each event sheet (roster, waivers, results) is normally created automatically for rides in the next 60 days. If you need one sooner, contact Angelita to run the sheet generation script manually.
 
 ---
 
@@ -194,7 +194,7 @@ On each event sheet (Roster, Full Roster), the **RUSA# cell** for a rider may be
 | Yellow | Rider has no SFR membership for 2026 |
 | Orange | Rider has no RUSA membership, or it has expired |
 
-These colors are refreshed automatically every time the event sheet is updated (every 4 hours for events in the next 30 days). The "Total Riders" and "Total Workers" counts shown in the sheet are live spreadsheet formulas — they will automatically adjust if you manually add or remove a rider from the sheet.
+These colors are refreshed automatically every time the event sheet is updated (every 4 hours for events in the next 60 days). The "Total Riders" and "Total Workers" counts shown in the sheet are live spreadsheet formulas — they will automatically adjust if you manually add or remove a rider from the sheet.
 
 ---
 
